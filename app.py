@@ -12,7 +12,6 @@ def get_model():
     try:
         return joblib.load(MODEL_PATH)
     except:
-        # Download MNIST and train once
         X, y = fetch_openml("mnist_784", version=1, return_X_y=True, as_frame=False)
         X = X / 255.0
         y = y.astype(int)
@@ -22,21 +21,15 @@ def get_model():
         return clf
 
 def preprocess_image(file_bytes):
-    # Read uploaded image as grayscale
     file_array = np.asarray(bytearray(file_bytes.read()), dtype=np.uint8)
     img = cv2.imdecode(file_array, cv2.IMREAD_GRAYSCALE)
-
-    # Resize to 28x28
     img_resized = cv2.resize(img, (28, 28), interpolation=cv2.INTER_AREA)
-
-    # Invert colors if background is dark
     if np.mean(img_resized) < 120:
         img_resized = cv2.bitwise_not(img_resized)
-
     arr = img_resized.reshape(1, -1) / 255.0
     return img_resized, arr
 
-st.title("MNIST Digit Classifier (No Pillow)")
+st.title("MNIST Digit Classifier (Streamlit Cloud)")
 model = get_model()
 
 uploaded = st.file_uploader("Upload a digit image (PNG/JPG)", type=["png","jpg","jpeg"])
