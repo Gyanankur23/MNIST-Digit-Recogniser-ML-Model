@@ -1,3 +1,2 @@
-streamlit==1.38.0
+gradio==5.0.0
 numpy==1.26.4
-
