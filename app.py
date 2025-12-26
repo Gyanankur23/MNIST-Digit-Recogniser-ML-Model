@@ -1,28 +1,21 @@
 import streamlit as st
 import numpy as np
-import cv2
-from tensorflow.keras.models import load_model
 
-# Load pre-trained model
-@st.cache_resource
-def get_model():
-    return load_model("mnist_model.h5")
+st.title("Digits 0–9 Demo (No external datasets)")
 
-model = get_model()
+# Create 10 synthetic "digit images" as numpy arrays
+digits = {}
+for d in range(10):
+    # Simple pattern: fill diagonal with digit value * 25
+    img = np.zeros((28,28), dtype=np.uint8)
+    np.fill_diagonal(img, d*25)
+    digits[d] = img
 
-st.title("MNIST Digit Classifier (Pre-trained)")
-st.write("Upload a 28×28 grayscale digit image (PNG/JPG).")
+choice = st.selectbox("Pick a digit (0–9)", list(digits.keys()))
+img = digits[choice]
 
-uploaded = st.file_uploader("Upload an image", type=["png","jpg","jpeg"])
-if uploaded:
-    file_bytes = np.asarray(bytearray(uploaded.read()), dtype=np.uint8)
-    img = cv2.imdecode(file_bytes, cv2.IMREAD_GRAYSCALE)
-    img_resized = cv2.resize(img, (28,28), interpolation=cv2.INTER_AREA)
-    arr = img_resized.reshape(1,28,28,1).astype("float32")/255.0
+st.image(img, caption=f"Synthetic digit {choice}", width=150, channels="GRAY")
 
-    st.image(img_resized, caption="Preprocessed 28×28", width=150, channels="GRAY")
-
-    pred = model.predict(arr)[0]
-    digit = int(np.argmax(pred))
-    confidence = float(np.max(pred))
-    st.success(f"Prediction: {digit} (confidence {confidence:.2f})")
+if st.button("Predict"):
+    # Trivial "prediction": just echo the choice
+    st.success(f"Predicted digit: {choice}")
