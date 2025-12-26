@@ -1,9 +1,9 @@
 import streamlit as st
 import numpy as np
+import cv2
 from sklearn.datasets import fetch_openml
 from sklearn.linear_model import LogisticRegression
 import joblib
-from PIL import Image, ImageOps
 
 MODEL_PATH = "mnist_lr.pkl"
 
@@ -21,21 +21,27 @@ def get_model():
         joblib.dump(clf, MODEL_PATH)
         return clf
 
-def preprocess_image(img: Image.Image):
-    img = img.convert("L")
-    img = ImageOps.invert(img)
-    img = img.resize((28, 28))
-    arr = np.array(img).reshape(1, -1) / 255.0
-    return img, arr
+def preprocess_image(file_bytes):
+    # Read uploaded image as grayscale
+    file_array = np.asarray(bytearray(file_bytes.read()), dtype=np.uint8)
+    img = cv2.imdecode(file_array, cv2.IMREAD_GRAYSCALE)
 
-st.title("MNIST Digit Classifier (Lightweight)")
+    # Resize to 28x28
+    img_resized = cv2.resize(img, (28, 28), interpolation=cv2.INTER_AREA)
+
+    # Invert colors if background is dark
+    if np.mean(img_resized) < 120:
+        img_resized = cv2.bitwise_not(img_resized)
+
+    arr = img_resized.reshape(1, -1) / 255.0
+    return img_resized, arr
+
+st.title("MNIST Digit Classifier (No Pillow)")
 model = get_model()
 
 uploaded = st.file_uploader("Upload a digit image (PNG/JPG)", type=["png","jpg","jpeg"])
 if uploaded:
-    img = Image.open(uploaded)
-    st.image(img, caption="Uploaded image", use_column_width=True)
-    processed_img, arr = preprocess_image(img)
-    st.image(processed_img, caption="Preprocessed 28x28", width=150)
+    img_resized, arr = preprocess_image(uploaded)
+    st.image(img_resized, caption="Preprocessed 28x28", width=150, channels="GRAY")
     pred = model.predict(arr)[0]
     st.success(f"Prediction: {pred}")
