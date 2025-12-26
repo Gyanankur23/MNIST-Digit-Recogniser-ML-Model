@@ -1,27 +1,32 @@
 import streamlit as st
 import numpy as np
-from sklearn.datasets import load_digits
 from sklearn.linear_model import LogisticRegression
 
 @st.cache_resource
 def get_model():
-    # Load digits dataset (8x8 images)
-    digits = load_digits()
-    X, y = digits.data / 16.0, digits.target
-    clf = LogisticRegression(max_iter=1000)
+    # Create a tiny synthetic dataset: "digits" are just sums of pixel blocks
+    # X: 100 samples of 8x8 random "images"
+    X = np.random.randint(0, 16, (100, 64))
+    # y: labels are just (sum of pixels mod 10)
+    y = (X.sum(axis=1) % 10)
+    clf = LogisticRegression(max_iter=500)
     clf.fit(X, y)
-    return clf, digits
+    return clf
 
-model, digits = get_model()
+model = get_model()
 
-st.title("Basic Digit Classifier (No joblib)")
-st.write("This demo uses scikit-learn's built-in digits dataset (8×8 grayscale images).")
+st.title("Synthetic Digit Classifier")
+st.write("Demo without external datasets. Uses synthetic data for training.")
 
-index = st.slider("Pick a sample index", 0, len(digits.images)-1, 0)
-img = digits.images[index]
-st.image(img, caption=f"Sample digit (label: {digits.target[index]})", width=150)
+# Let user upload an image (optional)
+uploaded = st.file_uploader("Upload a grayscale digit image (PNG/JPG)", type=["png","jpg","jpeg"])
 
-if st.button("Predict"):
-    arr = digits.data[index].reshape(1, -1) / 16.0
+if uploaded:
+    # Convert uploaded file to numpy array
+    file_bytes = np.asarray(bytearray(uploaded.read()), dtype=np.uint8)
+    # Just take first 64 values as a fake 'digit'
+    arr = file_bytes[:64].reshape(1, -1) % 16
     pred = model.predict(arr)[0]
-    st.success(f"Prediction: {pred}")
+    st.success(f"Predicted digit (synthetic): {pred}")
+else:
+    st.info("Upload any image file to see a synthetic prediction.")
