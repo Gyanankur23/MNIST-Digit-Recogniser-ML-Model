@@ -1,23 +1,28 @@
 import streamlit as st
 import numpy as np
+import cv2
+from tensorflow.keras.models import load_model
 
-st.title("Basic Digit Demo (No sklearn)")
+# Load pre-trained model
+@st.cache_resource
+def get_model():
+    return load_model("mnist_model.h5")
 
-# Create a tiny "model": predict digit as sum of pixels mod 10
-def simple_predict(arr):
-    return int(arr.sum() % 10)
+model = get_model()
 
-st.write("Upload any grayscale image (PNG/JPG). The app will resize to 28×28 and predict a digit.")
+st.title("MNIST Digit Classifier (Pre-trained)")
+st.write("Upload a 28×28 grayscale digit image (PNG/JPG).")
 
 uploaded = st.file_uploader("Upload an image", type=["png","jpg","jpeg"])
 if uploaded:
-    # Read file bytes into numpy array
     file_bytes = np.asarray(bytearray(uploaded.read()), dtype=np.uint8)
+    img = cv2.imdecode(file_bytes, cv2.IMREAD_GRAYSCALE)
+    img_resized = cv2.resize(img, (28,28), interpolation=cv2.INTER_AREA)
+    arr = img_resized.reshape(1,28,28,1).astype("float32")/255.0
 
-    # Fake preprocessing: take first 784 values as 'pixels'
-    arr = file_bytes[:784].reshape(28, 28) / 255.0
+    st.image(img_resized, caption="Preprocessed 28×28", width=150, channels="GRAY")
 
-    st.image(arr, caption="Preprocessed 28×28", width=150, channels="GRAY")
-
-    pred = simple_predict(arr)
-    st.success(f"Predicted digit (synthetic): {pred}")
+    pred = model.predict(arr)[0]
+    digit = int(np.argmax(pred))
+    confidence = float(np.max(pred))
+    st.success(f"Prediction: {digit} (confidence {confidence:.2f})")
